@@ -3,78 +3,54 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Http\Requests\CategoryRequest;
+use App\Http\Resources\CategoryResource;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
     public function index()
     {
-        return response()->json(Category::all());
+        return CategoryResource::collection(Category::all());
     }
 
-    public function show($id)
-    {
-        $category = Category::find($id);
+   public function show($id)
+{
+    $category = Category::find($id);
 
-        if (!$category) {
-            return response()->json(['message' => 'Category not found'], 404);
-        }
-
-        return response()->json($category);
+    if (!$category) {
+        return response()->json(['message' => 'Category not found'], 404);
     }
 
-    public function store(Request $request)
-    {
-      
-        $request->validate([
-            'name' => 'required',
-            'description' => 'nullable',
-            'slug' => 'nullable|unique:categories',
-            'image' => 'nullable',
-            'status' => 'required|boolean',
-        ]);
+    return new CategoryResource($category);
+}
 
-          $category = Category::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'slug' => $request->slug,
-            'image' => $request->image,
-            'status' => $request->status,
-        ]);
-         return response()->json([
-            'message' => 'Category created successfully',
-            'category' => $category
-        ], 201);
-    }
+  public function store(CategoryRequest $request)
+{
+    $category = Category::create($request->validated());
 
-    public function update(Request $request, $id)
-    {
-        $category = Category::find($id);
+    return response()->json([
+        'message' => 'Category created successfully',
+        'category' => new CategoryResource($category)
+    ], 201);
+}
 
-        if (!$category) {
-            return response()->json(['message' => 'Category not found'], 404);
-        }
 
-        $request->validate([
-            'name' => 'required',
-            'description' => 'nullable',
-            'slug' => 'nullable|unique:categories,slug,' . $id,
-            'image' => 'nullable',
-            'status' => 'required|boolean',
-        ]);
+ public function update(CategoryRequest $request, $id)
+{
+    $category = Category::findOrFail($id);
+    $category->update($request->validated());
 
-        $category->update($request->all());
+    return response()->json([
+        'message' => 'Category updated successfully',
+        'category' => new CategoryResource($category)
+    ]);
+}
 
-        return response()->json([
-            'message' => 'Category updated successfully',
-            'category' => $category
-        ]);
-    }
 
     public function destroy($id)
     {
         $category = Category::find($id);
-
         if (!$category) {
             return response()->json(['message' => 'Category not found'], 404);
         }
